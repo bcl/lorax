@@ -60,6 +60,14 @@ pylorax.imgutils module
     :undoc-members:
     :show-inheritance:
 
+pylorax.lorax module
+--------------------
+
+.. automodule:: pylorax.lorax
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 pylorax.ltmpl module
 --------------------
 
