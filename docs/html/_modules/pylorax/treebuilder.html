@@ -5,6 +5,7 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
+  
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <title>pylorax.treebuilder &mdash; Lorax 23.8 documentation</title>
@@ -14,7 +15,6 @@
   
 
   
-  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
 
   
   
@@ -34,7 +34,7 @@
         <link rel="up" title="pylorax" href="../pylorax.html"/> 
 
   
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+  <script src="_static/js/modernizr.min.js"></script>
 
 </head>
 
@@ -46,8 +46,14 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-nav-search">
         
-          <a href="../../index.html" class="fa fa-home"> Lorax</a>
+
         
+          <a href="../../index.html" class="icon icon-home"> Lorax
+        
+
+        
+        </a>
+
         
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
@@ -56,6 +62,8 @@
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
+
+        
       </div>
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
@@ -86,7 +94,24 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../../product-images.html">Product and Updates Images</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../modules.html">pylorax</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../../pylorax.html">pylorax package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../pylorax.html">pylorax package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../pylorax.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../pylorax.html#module-pylorax.base">pylorax.base module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../pylorax.html#module-pylorax.buildstamp">pylorax.buildstamp module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../pylorax.html#module-pylorax.decorators">pylorax.decorators module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../pylorax.html#module-pylorax.discinfo">pylorax.discinfo module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../pylorax.html#module-pylorax.dnfhelper">pylorax.dnfhelper module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../pylorax.html#module-pylorax.executils">pylorax.executils module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../pylorax.html#module-pylorax.imgutils">pylorax.imgutils module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../pylorax.html#module-pylorax.lorax">pylorax.lorax module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../pylorax.html#module-pylorax.ltmpl">pylorax.ltmpl module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../pylorax.html#module-pylorax.output">pylorax.output module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../pylorax.html#module-pylorax.sysutils">pylorax.sysutils module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../pylorax.html#module-pylorax.treebuilder">pylorax.treebuilder module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../pylorax.html#module-pylorax.treeinfo">pylorax.treeinfo module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../pylorax.html#module-pylorax">Module contents</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -119,6 +144,8 @@
       
     <li>pylorax.treebuilder</li>
       <li class="wy-breadcrumbs-aside">
+        
+          
         
       </li>
   </ul>
@@ -331,9 +358,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">treeinfo_data</span> <span class="o">=</span> <span class="bp">None</span>
 
     <span class="nd">@property</span>
-<div class="viewcode-block" id="TreeBuilder.kernels"><a class="viewcode-back" href="../../pylorax.html#pylorax.treebuilder.TreeBuilder.kernels">[docs]</a>    <span class="k">def</span> <span class="nf">kernels</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">kernels</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">findkernels</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vars</span><span class="o">.</span><span class="n">inroot</span><span class="p">)</span>
-</div>
+
 <div class="viewcode-block" id="TreeBuilder.rebuild_initrds"><a class="viewcode-back" href="../../pylorax.html#pylorax.treebuilder.TreeBuilder.rebuild_initrds">[docs]</a>    <span class="k">def</span> <span class="nf">rebuild_initrds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">add_args</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">backup</span><span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;Rebuild all the initrds in the tree. If backup is specified, each</span>
 <span class="sd">        initrd will be renamed with backup as a suffix before rebuilding.</span>
@@ -388,7 +415,7 @@
                 <span class="n">runcmd</span><span class="p">([</span><span class="s">&quot;implantisomd5&quot;</span><span class="p">,</span> <span class="n">iso</span><span class="p">])</span>
 </div>
     <span class="nd">@property</span>
-<div class="viewcode-block" id="TreeBuilder.dracut_hooks_path"><a class="viewcode-back" href="../../pylorax.html#pylorax.treebuilder.TreeBuilder.dracut_hooks_path">[docs]</a>    <span class="k">def</span> <span class="nf">dracut_hooks_path</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">dracut_hooks_path</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Return the path to the lorax dracut hooks scripts</span>
 
 <span class="sd">            Use the configured share dir if it is setup,</span>
@@ -398,7 +425,7 @@
             <span class="k">return</span> <span class="n">joinpaths</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">templatedir</span><span class="p">,</span> <span class="s">&quot;dracut_hooks&quot;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="s">&quot;/usr/share/lorax/dracut_hooks&quot;</span>
-</div>
+
 <div class="viewcode-block" id="TreeBuilder.copy_dracut_hooks"><a class="viewcode-back" href="../../pylorax.html#pylorax.treebuilder.TreeBuilder.copy_dracut_hooks">[docs]</a>    <span class="k">def</span> <span class="nf">copy_dracut_hooks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hooks</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Copy the hook scripts in hooks into the installroot&#39;s /tmp/</span>
 <span class="sd">        and return a list of commands to pass to dracut when creating the</span>
@@ -479,10 +506,10 @@
         &copy; Copyright 2015, Red Hat, Inc..
     </p>
   </div>
-
   Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
-  
+
 </footer>
+
         </div>
       </div>
 
