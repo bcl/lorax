@@ -2,7 +2,7 @@
 <%page args="basearch, product"/>
 
 ## anaconda package
-installpkg anaconda anaconda-widgets kexec-tools-anaconda-addon anaconda-install-env-deps
+installpkg anaconda-tui anaconda-widgets kexec-tools-anaconda-addon anaconda-install-env-deps
 ## Other available payloads
 installpkg dnf
 installpkg rpm-ostree ostree
@@ -87,13 +87,6 @@ installpkg tar xz curl bzip2
 installpkg systemd-sysv systemd-units
 installpkg rsyslog
 
-## xorg/GUI packages
-installpkg xorg-x11-drivers xorg-x11-server-Xorg
-installpkg xorg-x11-server-utils xorg-x11-xauth
-installpkg dbus-x11 metacity gsettings-desktop-schemas
-installpkg nm-connection-editor
-installpkg librsvg2
-
 ## filesystem tools
 installpkg btrfs-progs jfsutils xfsprogs reiserfs-utils gfs2-utils ntfs-3g ntfsprogs
 installpkg system-storage-manager
@@ -116,8 +109,6 @@ installpkg selinux-policy-targeted audit
 
 ## network tools/servers
 installpkg ethtool openssh-server nfs-utils openssh-clients
-installpkg tigervnc-server-minimal
-installpkg tigervnc-server-module
 installpkg net-tools
 installpkg bridge-utils
 installpkg nmap-ncat
@@ -135,33 +126,6 @@ installpkg pcmciautils
 %endif
 installpkg rng-tools
 
-## fonts & themes
-installpkg bitmap-fangsongti-fonts
-installpkg dejavu-sans-fonts dejavu-sans-mono-fonts
-installpkg kacst-farsi-fonts
-installpkg kacst-qurn-fonts
-installpkg lklug-fonts
-installpkg lohit-assamese-fonts
-installpkg lohit-bengali-fonts
-installpkg lohit-devanagari-fonts
-installpkg lohit-gu*-fonts
-installpkg lohit-kannada-fonts
-installpkg lohit-odia-fonts
-installpkg lohit-tamil-fonts
-installpkg lohit-telugu-fonts
-installpkg madan-fonts
-installpkg smc-meera-fonts
-installpkg thai-scalable-waree-fonts
-installpkg sil-abyssinica-fonts
-installpkg xorg-x11-fonts-misc
-installpkg aajohan-comfortaa-fonts
-installpkg abattis-cantarell-fonts
-installpkg sil-scheherazade-fonts
-installpkg jomolhari-fonts
-installpkg khmeros-base-fonts
-installpkg sil-padauk-fonts
-installpkg google-noto-sans-cjk-ttc-fonts
-
 ## debugging/bug reporting tools
 installpkg gdb-gdbserver
 installpkg libreport-plugin-bugzilla libreport-plugin-reportuploader
@@ -173,9 +137,6 @@ installpkg vim-minimal strace lsof dump xz less eject
 installpkg wget rsync bind-utils ftp mtr vconfig
 installpkg icfg spice-vdagent
 installpkg gdisk hexedit sg3_utils
-
-## satisfy libnotify's desktop-notification-daemon with the least crazy option
-installpkg notification-daemon
 
 ## actually install all the requested packages
 run_pkg_transaction

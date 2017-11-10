@@ -126,8 +126,3 @@ runcmd chroot ${root} /usr/bin/mknod -m 666 /dev/urandom c 1 9
 runcmd chroot ${root} /usr/bin/rpm -qa --pipe "sort | tee /root/lorax-packages.log"
 
 ## TODO: we could run prelink here if we wanted?
-
-## fix fonconfig cache containing timestamps
-runcmd chroot ${root} /usr/bin/find /usr/share/fonts /usr/share/X11/fonts -newermt "@${SOURCE_DATE_EPOCH}" -exec \
-    touch --no-dereference --date="@${SOURCE_DATE_EPOCH}" {} +
-runcmd chroot ${root} /usr/bin/fc-cache -f
