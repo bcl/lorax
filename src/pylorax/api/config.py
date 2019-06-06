@@ -53,9 +53,9 @@ def configure(conf_file="/etc/lorax/composer.conf", root_dir="/", test_config=Fa
     conf.add_section("users")
     conf.set("users", "root", "1")
 
-    # Enable all available repo files by default
+    # Disable all available repo files by default
     conf.add_section("repos")
-    conf.set("repos", "use_system_repos", "1")
+    conf.set("repos", "use_system_repos", "0")
     conf.set("repos", "enabled", "*")
 
     conf.add_section("yum")

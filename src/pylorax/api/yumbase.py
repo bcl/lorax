@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2017  Red Hat, Inc.
+# Copyright (C) 2017-2019  Red Hat, Inc.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,7 +22,10 @@ log = logging.getLogger("lorax-composer")
 import ConfigParser
 from fnmatch import fnmatchcase
 from glob import glob
+import io
 import os
+import shutil
+import tempfile
 from threading import Lock
 import time
 import yum
@@ -31,7 +34,51 @@ from yum.Errors import YumBaseError
 # This is a hack to short circuit yum's internal logging
 yum.logginglevels._added_handlers = True
 
+from pylorax.api.config import ComposerConfig, make_yum_dirs
 from pylorax.sysutils import joinpaths
+
+
+class SelectYumLock(object):
+    """ XXX NEEDS DOCS BCL """
+    def __init__(self):
+        self._locks= {}
+
+    def get_yum_lock(self, server_config, sources):
+        # Existing YumLock, return it
+        if sources not in self._locks:
+            # Create a new YumLock for this set of sources
+
+            # Make a copy of the server's configuration so that it isn't overwritten
+            bio = io.BytesIO()
+            server_config.write(bio)
+            bio.seek(0,0)
+            conf = ComposerConfig()
+            conf.readfp(bio)
+
+            # Create a new directory tree for these under /var/tmp/composer/
+            tempdir = tempfile.mkdtemp(prefix="yumlock.", dir="/var/tmp/composer/")
+            log.debug("Using %d for YumLock sources %s", tempdir, sources)
+
+            # and set these config settings inside that new tree
+            conf.set("composer", "repo_dir", os.path.realpath(joinpaths(tempdir, "/repos.d/")))
+            conf.set("composer", "yum_conf", os.path.realpath(joinpaths(tempdir, "/yum.conf")))
+            conf.set("composer", "yum_root", os.path.realpath(joinpaths(tempdir, "/root/")))
+            conf.set("composer", "cache_dir", os.path.realpath(joinpaths(tempdir, "/cache/")))
+
+            # Make sure yumbase directories are created
+            make_yum_dirs(conf)
+
+            # Copy over the selected sources (based on filename) from the server's main repos.d directory
+            repo_dir = server_config.get("composer", "repo_dir")
+            for s in sources.split(","):
+                if os.path.exists(joinpaths(repo_dir, s+".repo")):
+                    shutil.copy2(joinpaths(repo_dir, s+".repo"), conf.get("composer", "repo_dir"))
+
+            # Get a YumBase to share with the requests
+            self._locks[sources] = YumLock(conf)
+
+        return self._locks[sources]
+
 
 class YumLock(object):
     """Hold the YumBase object and a Lock to control access to it.

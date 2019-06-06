@@ -1398,6 +1398,14 @@ def v0_api(api):
         if VALID_API_STRING.match(out_fmt) is None:
             return jsonify(status=False, errors=[{"id": INVALID_CHARS, "msg": "Invalid characters in format argument"}]), 400
 
+        sources = request.args.get("sources", None)
+        if not sources:
+            return jsonify(status=False, errors=[{"id": UNKNOWN_SOURCE, "msg": "Must pass sources=foo,..."}]), 400
+        yumlock = api.config["YUMLOCK"].get_yum_lock(api.config["COMPOSER_CFG"], sources)
+
+        if VALID_API_STRING.match(sources) is None:
+            return jsonify(status=False, errors=[{"id": INVALID_CHARS, "msg": "Invalid characters in branch argument"}]), 400
+
         blueprints = []
         errors = []
         for blueprint_name in [n.strip() for n in sorted(blueprint_names.split(","), key=lambda n: n.lower())]:
@@ -1434,8 +1442,8 @@ def v0_api(api):
             projects = sorted(set(module_nver+package_nver), key=lambda p: p[0].lower())
             deps = []
             try:
-                with api.config["YUMLOCK"].lock:
-                    deps = projects_depsolve(api.config["YUMLOCK"].yb, projects, blueprint.group_names)
+                with yumlock.lock:
+                    deps = projects_depsolve(yumlock.yb, projects, blueprint.group_names)
             except ProjectsError as e:
                 errors.append({"id": BLUEPRINTS_ERROR, "msg": "%s: %s" % (blueprint_name, str(e))})
                 log.error("(v0_blueprints_freeze) %s", str(e))
@@ -1460,6 +1468,11 @@ def v0_api(api):
         branch = request.args.get("branch", "master")
         if VALID_API_STRING.match(branch) is None:
             return jsonify(status=False, errors=[{"id": INVALID_CHARS, "msg": "Invalid characters in branch argument"}]), 400
+
+        sources = request.args.get("sources", None)
+        if not sources:
+            return jsonify(status=False, errors=[{"id": UNKNOWN_SOURCE, "msg": "Must pass sources=foo,..."}]), 400
+        yumlock = api.config["YUMLOCK"].get_yum_lock(api.config["COMPOSER_CFG"], sources)
 
         blueprints = []
         errors = []
@@ -1496,8 +1509,8 @@ def v0_api(api):
             projects = sorted(set(module_nver+package_nver), key=lambda p: p[0].lower())
             deps = []
             try:
-                with api.config["YUMLOCK"].lock:
-                    deps = projects_depsolve(api.config["YUMLOCK"].yb, projects, blueprint.group_names)
+                with yumlock.lock:
+                    deps = projects_depsolve(yumlock.yb, projects, blueprint.group_names)
             except ProjectsError as e:
                 errors.append({"id": BLUEPRINTS_ERROR, "msg": "%s: %s" % (blueprint_name, str(e))})
                 log.error("(v0_blueprints_depsolve) %s", str(e))
@@ -1523,9 +1536,14 @@ def v0_api(api):
         except ValueError as e:
             return jsonify(status=False, errors=[{"id": BAD_LIMIT_OR_OFFSET, "msg": str(e)}]), 400
 
+        sources = request.args.get("sources", None)
+        if not sources:
+            return jsonify(status=False, errors=[{"id": UNKNOWN_SOURCE, "msg": "Must pass sources=foo,..."}]), 400
+        yumlock = api.config["YUMLOCK"].get_yum_lock(api.config["COMPOSER_CFG"], sources)
+
         try:
-            with api.config["YUMLOCK"].lock:
-                available = projects_list(api.config["YUMLOCK"].yb)
+            with yumlock.lock:
+                available = projects_list(yumlock.yb)
         except ProjectsError as e:
             log.error("(v0_projects_list) %s", str(e))
             return jsonify(status=False, errors=[{"id": PROJECTS_ERROR, "msg": str(e)}]), 400
@@ -1542,9 +1560,14 @@ def v0_api(api):
         if VALID_API_STRING.match(project_names) is None:
             return jsonify(status=False, errors=[{"id": INVALID_CHARS, "msg": "Invalid characters in API path"}]), 400
 
+        sources = request.args.get("sources", None)
+        if not sources:
+            return jsonify(status=False, errors=[{"id": UNKNOWN_SOURCE, "msg": "Must pass sources=foo,..."}]), 400
+        yumlock = api.config["YUMLOCK"].get_yum_lock(api.config["COMPOSER_CFG"], sources)
+
         try:
-            with api.config["YUMLOCK"].lock:
-                projects = projects_info(api.config["YUMLOCK"].yb, project_names.split(","))
+            with yumlock.lock:
+                projects = projects_info(yumlock.yb, project_names.split(","))
         except ProjectsError as e:
             log.error("(v0_projects_info) %s", str(e))
             return jsonify(status=False, errors=[{"id": PROJECTS_ERROR, "msg": str(e)}]), 400
@@ -1565,9 +1588,14 @@ def v0_api(api):
         if VALID_API_STRING.match(project_names) is None:
             return jsonify(status=False, errors=[{"id": INVALID_CHARS, "msg": "Invalid characters in API path"}]), 400
 
+        sources = request.args.get("sources", None)
+        if not sources:
+            return jsonify(status=False, errors=[{"id": UNKNOWN_SOURCE, "msg": "Must pass sources=foo,..."}]), 400
+        yumlock = api.config["YUMLOCK"].get_yum_lock(api.config["COMPOSER_CFG"], sources)
+
         try:
-            with api.config["YUMLOCK"].lock:
-                deps = projects_depsolve(api.config["YUMLOCK"].yb, [(n, "*") for n in project_names.split(",")], [])
+            with yumlock.lock:
+                deps = projects_depsolve(yumlock.yb, [(n, "*") for n in project_names.split(",")], [])
         except ProjectsError as e:
             log.error("(v0_projects_depsolve) %s", str(e))
             return jsonify(status=False, errors=[{"id": PROJECTS_ERROR, "msg": str(e)}]), 400
@@ -1579,12 +1607,18 @@ def v0_api(api):
 
         return jsonify(projects=deps)
 
+    # XXX BCL - TOTALLY KLUGED UP FOR EXPERIMENT
     @api.route("/api/v0/projects/source/list")
     @crossdomain(origin="*")
     def v0_projects_source_list():
         """Return the list of source names"""
-        with api.config["YUMLOCK"].lock:
-            repos = list(api.config["YUMLOCK"].yb.repos.listEnabled())
+        sources = request.args.get("sources", None)
+        if not sources:
+            return jsonify(status=False, errors=[{"id": UNKNOWN_SOURCE, "msg": "Must pass sources=foo,..."}]), 400
+        yumlock = api.config["YUMLOCK"].get_yum_lock(api.config["COMPOSER_CFG"], sources)
+
+        with yumlock.lock:
+            repos = list(yumlock.yb.repos.listEnabled())
         sources = sorted([r.id for r in repos])
         return jsonify(sources=sources)
 
@@ -1601,17 +1635,22 @@ def v0_api(api):
         if VALID_API_STRING.match(out_fmt) is None:
             return jsonify(status=False, errors=[{"id": INVALID_CHARS, "msg": "Invalid characters in format argument"}]), 400
 
+        sources = request.args.get("sources", None)
+        if not sources:
+            return jsonify(status=False, errors=[{"id": UNKNOWN_SOURCE, "msg": "Must pass sources=foo,..."}]), 400
+        yumlock = api.config["YUMLOCK"].get_yum_lock(api.config["COMPOSER_CFG"], sources)
+
         # Return info on all of the sources
         if source_names == "*":
-            with api.config["YUMLOCK"].lock:
-                source_names = ",".join(r.id for r in api.config["YUMLOCK"].yb.repos.listEnabled())
+            with yumlock.lock:
+                source_names = ",".join(r.id for r in yumlock.yb.repos.listEnabled())
 
         sources = {}
         errors = []
         system_sources = get_repo_sources("/etc/yum.repos.d/*.repo")
         for source in source_names.split(","):
-            with api.config["YUMLOCK"].lock:
-                repo = api.config["YUMLOCK"].yb.repos.repos.get(source, None)
+            with yumlock.lock:
+                repo = yumlock.yb.repos.repos.get(source, None)
             if not repo:
                 errors.append({"id": UNKNOWN_SOURCE, "msg": "%s is not a valid source" % source})
                 continue
@@ -1626,6 +1665,7 @@ def v0_api(api):
         else:
             return jsonify(sources=sources, errors=errors)
 
+    # XXX BCL - TOTALLY KLUGED UP FOR EXPERIMENT
     @api.route("/api/v0/projects/source/new", methods=["POST"])
     @crossdomain(origin="*")
     def v0_projects_source_new():
@@ -1639,56 +1679,57 @@ def v0_api(api):
         if source["name"] in system_sources:
             return jsonify(status=False, errors=[{"id": SYSTEM_SOURCE, "msg": "%s is a system source, it cannot be changed." % source["name"]}]), 400
 
+#        try:
+#            # Delete it from yum (if it exists) and replace it with the new one
+#            with api.config["YUMLOCK"].get_yum_lock.lock:
+#                yb = api.config["YUMLOCK"].get_yum_lock.yb
+#                # If this repo already exists, delete it and replace it with the new one
+#                repos = list(r.id for r in yb.repos.listEnabled())
+#                if source["name"] in repos:
+#                    yb.repos.delete(source["name"])
+#
+#                repo_dict = source_to_repo(source)
+#                repoid = repo_dict.pop("id")
+#                baseurl = repo_dict.pop("baseurl")
+#                mirrorlist = repo_dict.pop("mirrorlist")
+#                yb.add_enable_repo(repoid, baseurl, mirrorlist, **repo_dict)
+#
+#                log.info("Updating repository metadata after adding %s", source["name"])
+#                update_metadata(yb)
+
+        # Write the new repo to disk, replacing any existing ones
+        repo_dir = api.config["COMPOSER_CFG"].get("composer", "repo_dir")
+
+        # Remove any previous sources with this name, ignore it if it isn't found
         try:
-            # Delete it from yum (if it exists) and replace it with the new one
-            with api.config["YUMLOCK"].lock:
-                yb = api.config["YUMLOCK"].yb
-                # If this repo already exists, delete it and replace it with the new one
-                repos = list(r.id for r in yb.repos.listEnabled())
-                if source["name"] in repos:
-                    yb.repos.delete(source["name"])
+            delete_repo_source(joinpaths(repo_dir, "*.repo"), source["name"])
+        except ProjectsError:
+            pass
 
-                repo_dict = source_to_repo(source)
-                repoid = repo_dict.pop("id")
-                baseurl = repo_dict.pop("baseurl")
-                mirrorlist = repo_dict.pop("mirrorlist")
-                yb.add_enable_repo(repoid, baseurl, mirrorlist, **repo_dict)
-
-                log.info("Updating repository metadata after adding %s", source["name"])
-                update_metadata(yb)
-
-            # Write the new repo to disk, replacing any existing ones
-            repo_dir = api.config["COMPOSER_CFG"].get("composer", "repo_dir")
-
-            # Remove any previous sources with this name, ignore it if it isn't found
-            try:
-                delete_repo_source(joinpaths(repo_dir, "*.repo"), source["name"])
-            except ProjectsError:
-                pass
-
-            # Make sure the source name can't contain a path traversal by taking the basename
-            source_path = joinpaths(repo_dir, os.path.basename("%s.repo" % source["name"]))
-            with open(source_path, "w") as f:
-                f.write(yum_repo_to_file_repo(source_to_repo(source)))
-        except Exception as e:
-            log.error("(v0_projects_source_add) adding %s failed: %s", source["name"], str(e))
-
-            # Cleanup the mess, if loading it failed we don't want to leave it in memory
-            with api.config["YUMLOCK"].lock:
-                yb = api.config["YUMLOCK"].yb
-                repos = list(r.id for r in yb.repos.listEnabled())
-                if source["name"] in repos:
-                    yb.repos.delete(source["name"])
-                    # delete doesn't remove it from the cache used by listEnabled so we have to force it
-                    yb.repos._cache_enabled_repos = None
-
-                    log.info("Updating repository metadata after adding %s failed", source["name"])
-                    update_metadata(yb)
-
-            return jsonify(status=False, errors=[{"id": PROJECTS_ERROR, "msg": str(e)}]), 400
+        # Make sure the source name can't contain a path traversal by taking the basename
+        source_path = joinpaths(repo_dir, os.path.basename("%s.repo" % source["name"]))
+        with open(source_path, "w") as f:
+            f.write(yum_repo_to_file_repo(source_to_repo(source)))
+#        except Exception as e:
+#            log.error("(v0_projects_source_add) adding %s failed: %s", source["name"], str(e))
+#
+#            # Cleanup the mess, if loading it failed we don't want to leave it in memory
+#            with api.config["YUMLOCK"].get_yum_lock.lock:
+#                yb = api.config["YUMLOCK"].get_yum_lock.yb
+#                repos = list(r.id for r in yb.repos.listEnabled())
+#                if source["name"] in repos:
+#                    yb.repos.delete(source["name"])
+#                    # delete doesn't remove it from the cache used by listEnabled so we have to force it
+#                    yb.repos._cache_enabled_repos = None
+#
+#                    log.info("Updating repository metadata after adding %s failed", source["name"])
+#                    update_metadata(yb)
+#
+#            return jsonify(status=False, errors=[{"id": PROJECTS_ERROR, "msg": str(e)}]), 400
 
         return jsonify(status=True)
 
+    # XXX BCL - TOTALLY KLUGED UP FOR EXPERIMENT
     @api.route("/api/v0/projects/source/delete", defaults={'source_name': ""}, methods=["DELETE"])
     @api.route("/api/v0/projects/source/delete/<source_name>", methods=["DELETE"])
     @crossdomain(origin="*")
@@ -1706,17 +1747,17 @@ def v0_api(api):
             # Remove the file entry for the source
             delete_repo_source(joinpaths(share_dir, "*.repo"), source_name)
 
-            # Delete the repo
-            with api.config["YUMLOCK"].lock:
-                yb = api.config["YUMLOCK"].yb
-                repos = list(r.id for r in yb.repos.listEnabled())
-                if source_name in repos:
-                    yb.repos.delete(source_name)
-                    # delete doesn't remove it from the cache used by listEnabled so we have to force it
-                    yb.repos._cache_enabled_repos = None
-
-                    log.info("Updating repository metadata after removing %s", source_name)
-                    update_metadata(yb)
+#            # Delete the repo
+#            with api.config["YUMLOCK"].get_yum_lock.lock:
+#                yb = api.config["YUMLOCK"].get_yum_lock.yb
+#                repos = list(r.id for r in yb.repos.listEnabled())
+#                if source_name in repos:
+#                    yb.repos.delete(source_name)
+#                    # delete doesn't remove it from the cache used by listEnabled so we have to force it
+#                    yb.repos._cache_enabled_repos = None
+#
+#                    log.info("Updating repository metadata after removing %s", source_name)
+#                    update_metadata(yb)
 
         except ProjectsError as e:
             log.error("(v0_projects_source_delete) %s", str(e))
@@ -1732,6 +1773,11 @@ def v0_api(api):
         if module_names and VALID_API_STRING.match(module_names) is None:
             return jsonify(status=False, errors=[{"id": INVALID_CHARS, "msg": "Invalid characters in API path"}]), 400
 
+        sources = request.args.get("sources", None)
+        if not sources:
+            return jsonify(status=False, errors=[{"id": UNKNOWN_SOURCE, "msg": "Must pass sources=foo,..."}]), 400
+        yumlock = api.config["YUMLOCK"].get_yum_lock(api.config["COMPOSER_CFG"], sources)
+
         try:
             limit = int(request.args.get("limit", "20"))
             offset = int(request.args.get("offset", "0"))
@@ -1742,8 +1788,8 @@ def v0_api(api):
             module_names = module_names.split(",")
 
         try:
-            with api.config["YUMLOCK"].lock:
-                available = modules_list(api.config["YUMLOCK"].yb, module_names)
+            with yumlock.lock:
+                available = modules_list(yumlock.yb, module_names)
         except ProjectsError as e:
             log.error("(v0_modules_list) %s", str(e))
             return jsonify(status=False, errors=[{"id": MODULES_ERROR, "msg": str(e)}]), 400
@@ -1764,9 +1810,15 @@ def v0_api(api):
         """Return detailed information about the listed modules"""
         if VALID_API_STRING.match(module_names) is None:
             return jsonify(status=False, errors=[{"id": INVALID_CHARS, "msg": "Invalid characters in API path"}]), 400
+
+        sources = request.args.get("sources", None)
+        if not sources:
+            return jsonify(status=False, errors=[{"id": UNKNOWN_SOURCE, "msg": "Must pass sources=foo,..."}]), 400
+        yumlock = api.config["YUMLOCK"].get_yum_lock(api.config["COMPOSER_CFG"], sources)
+
         try:
-            with api.config["YUMLOCK"].lock:
-                modules = modules_info(api.config["YUMLOCK"].yb, module_names.split(","))
+            with yumlock.lock:
+                modules = modules_info(yumlock.yb, module_names.split(","))
         except ProjectsError as e:
             log.error("(v0_modules_info) %s", str(e))
             return jsonify(status=False, errors=[{"id": MODULES_ERROR, "msg": str(e)}]), 400
@@ -1794,6 +1846,11 @@ def v0_api(api):
             test_mode = int(request.args.get("test", "0"))
         except ValueError:
             test_mode = 0
+
+        sources = request.args.get("sources", None)
+        if not sources:
+            return jsonify(status=False, errors=[{"id": UNKNOWN_SOURCE, "msg": "Must pass sources=foo,..."}]), 400
+        yumlock = api.config["YUMLOCK"].get_yum_lock(api.config["COMPOSER_CFG"], sources)
 
         compose = request.get_json(cache=False)
 
@@ -1826,7 +1883,7 @@ def v0_api(api):
             return jsonify(status=False, errors=errors), 400
 
         try:
-            build_id = start_build(api.config["COMPOSER_CFG"], api.config["YUMLOCK"], api.config["GITLOCK"],
+            build_id = start_build(api.config["COMPOSER_CFG"], yumlock, api.config["GITLOCK"],
                                    branch, blueprint_name, compose_type, test_mode)
         except Exception as e:
             if "Invalid compose type" in str(e):
