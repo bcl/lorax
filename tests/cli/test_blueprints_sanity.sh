@@ -43,7 +43,7 @@ __EOF__
 
         rlRun -t -c "$CLI blueprints push beakerlib.toml"
         rlAssertEquals "pushed bp is found via list" "`$CLI blueprints list | grep beakerlib`" "beakerlib"
-        rlAssertExists "/var/lib/lorax/composer/blueprints/git/workspace/master/beakerlib.toml"
+        rlAssertExists "$BLUEPRINTS_DIR/git/workspace/master/beakerlib.toml"
     rlPhaseEnd
 
     rlPhaseStartTest "blueprints show"
@@ -72,7 +72,7 @@ __EOF__
     rlPhaseStartTest "blueprints delete"
         rlRun -t -c "$CLI blueprints delete beakerlib"
         rlAssertEquals "bp not found after delete" "`$CLI blueprints list | grep beakerlib`" ""
-        rlAssertNotExists "/var/lib/lorax/composer/blueprints/git/workspace/master/beakerlib.toml"
+        rlAssertNotExists "$BLUEPRINTS_DIR/git/workspace/master/beakerlib.toml"
     rlPhaseEnd
 
     rlPhaseStartTest "start a compose with deleted blueprint"
