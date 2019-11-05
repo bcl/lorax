@@ -228,6 +228,10 @@ class RuntimeBuilder(object):
         workdir = joinpaths(os.path.dirname(outfile), "runtime-workdir")
         os.makedirs(joinpaths(workdir, "LiveOS"))
 
+        estimate = imgutils.estimate_size(self.vars.root, fstype="ext4")
+        logger.info("Estimated minimum size for rootfs is %dGiB (%d)", estimate / 1024**3, estimate)
+        if estimate > size * 1024**3:
+            logger.warning("rootfs.img size of %dGiB may not be enough.", size)
         imgutils.mkrootfsimg(self.vars.root, joinpaths(workdir, "LiveOS/rootfs.img"),
                              "Anaconda", size=size)
 
