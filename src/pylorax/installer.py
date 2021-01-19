@@ -135,24 +135,33 @@ class QEMUInstall(object):
     """
     Run qemu using an iso and a kickstart
     """
-    # Mapping of arch to qemu command
-    QEMU_CMDS = {"x86_64":  "qemu-system-x86_64",
-                 "i386":    "qemu-system-i386",
-                 "arm":     "qemu-system-arm",
-                 "aarch64": "qemu-system-aarch64",
-                 "ppc64le": "qemu-system-ppc64"
-                }
-    COMPATIBLE_ARCHS = {"x86_64": [ "x86_64", "i386" ],
-                        "i386": [ "i386" ],
-                        "arm": [ "arm" ],
-                        "aarch64": [ "aarch64", "arm" ],
-                        "ppc64le": [ "ppc64le" ]}
-    QEMU_DEFAULT_MACHINE = {"x86_64":  "q35",
-                            "i386":    "q35",
-                            "arm":     "virt",
-                            "aarch64": "virt",
-                            "ppc64le": "pseries"
-                           }
+    # Mapping of arch to qemu command and options
+    QEMU = {"x86_64": {
+                "cmd": "qemu-system-x86_64",
+                "arches": ["x86_64", "i386"],
+                "machine": "q35",
+                },
+            "i386": {
+                "cmd": "qemu-system-i386",
+                "arches": ["i386"],
+                "machine": "q35",
+                },
+            "arm": {
+                "cmd": "qemu-system-arm",
+                "arches": ["arm"],
+                "machine": "virt",
+                },
+            "aarch64": {
+                "cmd": "qemu-system-aarch64",
+                "arches": ["aarch64", "arm"],
+                "machine": "virt",
+                },
+            "ppc64le": {
+                "cmd": "qemu-system-ppc64",
+                "arches": ["ppc64le"],
+                "machine": "pseries",
+                },
+        }
 
     def __init__(self, opts, iso, ks_paths, disk_img, img_size=2048,
                  kernel_args=None, memory=1024, vcpus=None, vnc=None, arch=None,
@@ -181,11 +190,13 @@ class QEMUInstall(object):
         :param str ovmf_path: Path to the OVMF firmware
         """
         target_arch = arch or os.uname().machine
-        has_machine = False
         # Lookup qemu-system- for arch if passed, or try to guess using host arch
-        qemu_cmd = [self.QEMU_CMDS.get(target_arch, "qemu-system-"+os.uname().machine)]
-        if not os.path.exists("/usr/bin/"+qemu_cmd[0]):
-            raise InstallError("%s does not exist, cannot run qemu" % qemu_cmd[0])
+        if target_arch in self.QEMU:
+            qemu_cmd = [self.QEMU[target_arch]["cmd"]]
+        elif os.path.exists("/usr/bin/"+"qemu-system-"+os.uname().machine):
+            qemu_cmd = ["/usr/bin/qemu-system-"+os.uname().machine]
+        else:
+            raise InstallError("/usr/bin/qemu-system-%s does not exist, cannot run qemu" % os.uname().machine)
 
         qemu_cmd += ["-no-user-config"]
         qemu_cmd += ["-m", str(memory)]
@@ -193,21 +204,19 @@ class QEMUInstall(object):
             qemu_cmd += ["-smp", str(vcpus)]
 
         if not opts.no_kvm and os.path.exists("/dev/kvm"):
-            if os.uname().machine not in self.COMPATIBLE_ARCHS[target_arch]:
+            if os.uname().machine not in self.QEMU[target_arch]["arches"]:
                 raise InstallError("KVM support not available to run %s on %s" % (target_arch, os.uname().machine))
             qemu_cmd += ["-machine", "accel=kvm"]
-            has_machine = True
 
         if boot_uefi:
-            if target_arch == x86_64:
-                qemu_cmd += ["-machine", "q35,smm=on"]
-                qemu_cmd += ["-global", "driver=cfi.pflash01,property=secure,value=on"]
-                has_machine = True
-            else:
+            if target_arch != "x86_64":
                 raise InstallError("UEFI support not available for %s (yet?)" % target_arch)
 
-        if not has_machine:
-            qemu_cmd += ["-machine", self.QEMU_DEFAULT_MACHINE[target_arch]]
+            qemu_cmd += ["-machine", "q35,smm=on"]
+            qemu_cmd += ["-global", "driver=cfi.pflash01,property=secure,value=on"]
+
+        if "-machine" not in qemu_cmd:
+            qemu_cmd += ["-machine", self.QEMU[target_arch]["machine"]]
 
         # Copy the initrd from the iso, create a cpio archive of the kickstart files
         # and append it to the temporary initrd.
