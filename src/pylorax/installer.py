@@ -140,6 +140,9 @@ class QEMUInstall(object):
                 "cmd": "qemu-system-x86_64",
                 "arches": ["x86_64", "i386"],
                 "machine": "q35",
+                "uefi": ["ovmf/OVMF_CODE.secboot.fd", "ovmf/OVMF_VARS.secboot.fd"],
+                "uefi_machine": "q35,smm=on",
+                "uefi_args": ["-global", "driver=cfi.pflash01,property=secure,value=on"],
                 },
             "i386": {
                 "cmd": "qemu-system-i386",
@@ -155,6 +158,9 @@ class QEMUInstall(object):
                 "cmd": "qemu-system-aarch64",
                 "arches": ["aarch64", "arm"],
                 "machine": "virt",
+                "uefi": ["aarch64/QEMU_EFI-pflash.raw", "aarch64/vars-template-pflash.raw"],
+                "uefi_machine": "virt",
+                "uefi_args": ["-global", "driver=cfi.pflash01,property=secure,value=off"],
                 },
             "ppc64le": {
                 "cmd": "qemu-system-ppc64",
@@ -187,7 +193,7 @@ class QEMUInstall(object):
         :param int virtio_port: Port to connect virtio log to
         :param str image_type: Type of qemu-img disk to create, or None.
         :param bool boot_uefi: Use OVMF to boot the VM in UEFI mode
-        :param str ovmf_path: Path to the OVMF firmware
+        :param str ovmf_path: Path to the top of edk2 OVMF firmware directory tree
         """
         target_arch = arch or os.uname().machine
         # Lookup qemu-system- for arch if passed, or try to guess using host arch
@@ -209,11 +215,11 @@ class QEMUInstall(object):
             qemu_cmd += ["-machine", "accel=kvm"]
 
         if boot_uefi:
-            if target_arch != "x86_64":
+            if "uefi_machine" not in self.QEMU[target_arch]:
                 raise InstallError("UEFI support not available for %s (yet?)" % target_arch)
 
-            qemu_cmd += ["-machine", "q35,smm=on"]
-            qemu_cmd += ["-global", "driver=cfi.pflash01,property=secure,value=on"]
+            qemu_cmd += ["-machine", self.QEMU[target_arch]["uefi_machine"]]
+            qemu_cmd += self.QEMU[target_arch]["uefi_args"]
 
         if "-machine" not in qemu_cmd:
             qemu_cmd += ["-machine", self.QEMU[target_arch]["machine"]]
@@ -275,12 +281,23 @@ class QEMUInstall(object):
                 qemu_cmd += ["-device", "virtio-rng-pci,rng=virtio-rng0,id=rng0,bus=pci.0,addr=0x9"]
 
         if boot_uefi and ovmf_path:
-            qemu_cmd += ["-drive", "file=%s/OVMF_CODE.secboot.fd,if=pflash,format=raw,unit=0,readonly=on" % ovmf_path]
+            if "uefi" not in self.QEMU[target_arch]:
+                raise InstallError("UEFI support not available for %s, missing firmware configuration" % target_arch)
 
-            # Make a copy of the OVMF_VARS.secboot.fd for this run
+            # User may pass full directory to ovmf files, or to the edk2 directory.
+            firmware = joinpaths(ovmf_path, os.path.basename(self.QEMU[target_arch]["uefi"][0]))
+            flash_vars = joinpaths(ovmf_path, os.path.basename(self.QEMU[target_arch]["uefi"][1]))
+            if not os.path.exists(firmware) or not os.path.exists(flash_vars):
+                firmware = joinpaths(ovmf_path, self.QEMU[target_arch]["uefi"][0])
+                flash_vars = joinpaths(ovmf_path, self.QEMU[target_arch]["uefi"][1])
+                if not os.path.exists(firmware) or not os.path.exists(flash_vars):
+                    raise InstallError("UEFI firmware file(s) are missing: %s, %s" % (firmware, flash_vars))
+
+            qemu_cmd += ["-drive", "file=%s,if=pflash,format=raw,unit=0,readonly=on" % firmware]
+
+            # Make a copy of the flash variables for this run
             ovmf_vars = tempfile.mktemp(prefix="lmc-OVMF_VARS-", suffix=".fd")
-            shutil.copy2(joinpaths(ovmf_path, "/OVMF_VARS.secboot.fd"), ovmf_vars)
-
+            shutil.copy2(flash_vars, ovmf_vars)
             qemu_cmd += ["-drive", "file=%s,if=pflash,format=raw,unit=1" % ovmf_vars]
 
         log.info("Running qemu")
